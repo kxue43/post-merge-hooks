@@ -12,8 +12,9 @@ import pytest
 
 # Own
 from post_merge_hooks.utils import (
+    WrongHeadRefLogTypeException,
     get_changed_files_set_between_commits,
-    get_last_pull_commits_sha,
+    get_this_merge_hashes,
     watched_files_changed,
 )
 
@@ -108,31 +109,28 @@ def local_pull_2nd_commit(
     return local_clone_1st_commit
 
 
-def test_get_last_pull_commits_sha_after_clone_remote_1st_commit(
+def test_get_last_pull_commits_hash_after_clone_remote_1st_commit(
     local_clone_1st_commit: Path,
 ) -> None:
-    first, second = get_last_pull_commits_sha()
-    assert first is None
-    assert second is None
+    with pytest.raises(WrongHeadRefLogTypeException):
+        get_this_merge_hashes()
 
 
 @pytest.mark.skipif(not git_available(), reason="`git` is not available from CLI")
-def test_get_last_pull_commits_sha_after_pull_remote_2nd_commit(
+def test_get_last_pull_commits_hash_after_pull_remote_2nd_commit(
     local_pull_2nd_commit: Path,
 ) -> None:
     agent = GitRepoAgent(local_pull_2nd_commit, init_repo=False)
     expected_last = agent.rev_parse("HEAD")
     expected_second_last = agent.rev_parse("HEAD^1")
-    last, second_last = get_last_pull_commits_sha()
+    last, second_last = get_this_merge_hashes()
     assert last == expected_last
     assert second_last == expected_second_last
 
 
 @pytest.mark.skipif(not git_available(), reason="`git` is not available from CLI")
 def test_get_changed_files_set_between_commits(local_pull_2nd_commit: Path) -> None:
-    last, second_last = get_last_pull_commits_sha()
-    assert last is not None
-    assert second_last is not None
+    last, second_last = get_this_merge_hashes()
     changed_files_set = get_changed_files_set_between_commits(second_last, last)
     assert changed_files_set == set([PurePath("2.txt"), PurePath("a/1.txt")])
 
@@ -146,7 +144,5 @@ def test_get_changed_files_set_between_commits(local_pull_2nd_commit: Path) -> N
 def test_watched_files_changed(
     local_pull_2nd_commit: Path, dir_name: str, result: bool
 ) -> None:
-    last, second_last = get_last_pull_commits_sha()
-    assert last is not None
-    assert second_last is not None
+    last, second_last = get_this_merge_hashes()
     assert watched_files_changed([dir_name], last, second_last) == result
