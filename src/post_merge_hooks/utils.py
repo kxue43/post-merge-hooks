@@ -7,13 +7,10 @@ from typing import Callable, Iterable, Optional, Sequence, Set, Tuple, TypeVar
 
 # External
 from colorama import Fore, Style
-from pygit2 import Diff, Repository
+from pygit2 import Diff, RefLogEntry, Repository
 
 # Own
 from .exceptions import RootException
-
-
-SHA1_HASH_REGEX = re.compile(r"^[0-9a-f]{40}$")
 
 
 def get_repo() -> Repository:
@@ -48,13 +45,25 @@ class InvalidCommitHashException(RootException):
     pass
 
 
+def is_merge(entry: RefLogEntry) -> bool:
+    msg = entry.message
+    return msg.startswith("pull:") or msg.startswith("merge")
+
+
+SHA1_HASH_REGEX = re.compile(r"^[0-9a-f]{40}$")
+EMPTY_HASH = "0" * 40
+
+
+def is_invalid(hash: str) -> bool:
+    return SHA1_HASH_REGEX.match(hash) is None or hash == EMPTY_HASH
+
+
 def get_this_merge_hashes() -> Tuple[str, str]:
     repo = get_repo()
     entry = next(repo.head.log(), None)
     if entry is None:
         raise NoHeadRefLogException("Local Git repo has no reflog for HEAD.")
-    msg = entry.message
-    if not msg.startswith("pull:") and not msg.startswith("merge"):
+    if not is_merge(entry):
         raise WrongHeadRefLogTypeException(
             """
             The last HEAD reflog entry is neither from a `git merge`
@@ -63,7 +72,7 @@ def get_this_merge_hashes() -> Tuple[str, str]:
         )
     hashes = (str(entry.oid_new), str(entry.oid_old))
     for hash in hashes:
-        if SHA1_HASH_REGEX.match(hash) is None:
+        if is_invalid(hash):
             raise InvalidCommitHashException(f"Got invalid commit hash `{hash}`.")
     return hashes
 

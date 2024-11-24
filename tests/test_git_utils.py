@@ -2,6 +2,7 @@
 from __future__ import annotations
 import os
 from pathlib import Path, PurePath
+from shutil import rmtree
 from subprocess import run
 from tempfile import TemporaryDirectory
 from typing import Iterable
@@ -9,9 +10,12 @@ from typing import Iterable
 # External
 from pygit2 import clone_repository, Index, init_repository, Signature, Repository
 import pytest
+from pytest_mock import MockerFixture
 
 # Own
 from post_merge_hooks.utils import (
+    InvalidCommitHashException,
+    NoHeadRefLogException,
     WrongHeadRefLogTypeException,
     get_changed_files_set_between_commits,
     get_this_merge_hashes,
@@ -109,15 +113,31 @@ def local_pull_2nd_commit(
     return local_clone_1st_commit
 
 
-def test_get_last_pull_commits_hash_after_clone_remote_1st_commit(
+def test_get_this_merge_hashes_wrong_reflog_type(
     local_clone_1st_commit: Path,
 ) -> None:
     with pytest.raises(WrongHeadRefLogTypeException):
         get_this_merge_hashes()
 
 
+def test_get_this_merge_hashes_no_reflog(
+    local_clone_1st_commit: Path,
+) -> None:
+    rmtree(local_clone_1st_commit.joinpath(".git/logs"))
+    with pytest.raises(NoHeadRefLogException):
+        get_this_merge_hashes()
+
+
+def test_get_this_merge_hashes_invalid_hashes(
+    local_clone_1st_commit: Path, mocker: MockerFixture
+) -> None:
+    mocker.patch("post_merge_hooks.utils.is_merge").return_value = True
+    with pytest.raises(InvalidCommitHashException):
+        get_this_merge_hashes()
+
+
 @pytest.mark.skipif(not git_available(), reason="`git` is not available from CLI")
-def test_get_last_pull_commits_hash_after_pull_remote_2nd_commit(
+def test_get_this_merge_hashes_after_pull_remote_2nd_commit(
     local_pull_2nd_commit: Path,
 ) -> None:
     agent = GitRepoAgent(local_pull_2nd_commit, init_repo=False)
