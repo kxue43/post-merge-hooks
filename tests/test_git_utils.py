@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 from typing import Iterable
 
 # External
-from pygit2 import clone_repository, Index, init_repository, Signature, Repository
+from pygit2 import Index, Oid, Repository, Signature, clone_repository, init_repository
 import pytest
 from pytest_mock import MockerFixture
 
@@ -63,8 +63,8 @@ class GitRepoAgent:
             ref, self._author, self._author, message, tree, parents
         )
 
-    def rev_parse(self, revision: str) -> str:
-        return str(self._repo.revparse_single(revision).id)
+    def rev_parse(self, revision: str) -> Oid:
+        return self._repo.revparse_single(revision).id
 
     @staticmethod
     def clone_repo(remote: Path, local: Path) -> None:
