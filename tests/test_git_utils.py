@@ -35,7 +35,8 @@ class GitRepoAgent:
             self._repo = init_repository(str(self.root_dir))
         else:
             self._repo = Repository(str(self.root_dir.joinpath(".git")))
-        self._index = self._repo.index
+        # The following is caused by a bug in pygit2's pyi files.
+        self._index = self._repo.index  # type: ignore[attr-defined]
         self._author = Signature("Ke Xue", "xueke.kent@gmail.com")
 
     def create_file(self, rel_path: str, contents: str) -> None:
