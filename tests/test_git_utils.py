@@ -63,7 +63,7 @@ class GitRepoAgent:
         )
 
     def rev_parse(self, revision: str) -> str:
-        return str(self._repo.revparse_single(revision).oid)
+        return str(self._repo.revparse_single(revision).id)
 
     @staticmethod
     def clone_repo(remote: Path, local: Path) -> None:
