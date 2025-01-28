@@ -1,5 +1,11 @@
 # post-merge-hooks
 
+**IMPORTANT**: This repo has been archived. The project has migrated to a new, more fitting name
+[shell-cmd-on-change](https://github.com/kxue43/shell-cmd-on-change), where it reached stable version 1.0+.
+Please use the new repo for the same hook functionality.
+
+---
+
 This repo implements two "post-merge" Git hooks which help users run a shell command if some specific files changed
 after a `git pull` from a remote branch or a `git merge` from a local branch.
 
